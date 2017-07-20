@@ -1,0 +1,10 @@
+# ------------------------------------------------------------------------------
+# Author:   Greg Horie
+# Date:     2011-01-13
+# Version:  0.1
+# Notes:    Customized bash functionality for all servers
+# ------------------------------------------------------------------------------
+
+if [ -f ~/.bashrc ]; then
+        . ~/.bashrc
+fi

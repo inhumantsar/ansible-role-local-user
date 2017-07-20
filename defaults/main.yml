@@ -1,0 +1,12 @@
+---
+  user_state: 'present'
+  user_fullname: 'J. Doe'
+  user_name: 'jdoe'
+  user_group_name: '{{ user_name }}'
+  user_groups: []
+  user_home_dir: '/home/{{ user_name }}'
+  user_authorized_keys: []
+  user_generate_key: 'no'
+  user_key_passphrase: ''
+  user_sudoer: true
+  user_sudo_nopasswd: true

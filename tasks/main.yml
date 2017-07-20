@@ -1,0 +1,73 @@
+---
+  - name: create group {{ user_group_name }}
+    group:
+      name: '{{ user_group_name }}'
+      state: 'present'
+
+  - name: create user {{ user_name }}
+    user:
+      state: '{{ user_state }}'
+      name: '{{ user_name }}'
+      group: '{{ user_group_name }}'
+      home: '{{ user_home_dir }}'
+      shell: '/bin/bash'
+      comment: '{{ user_fullname }}'
+      generate_ssh_key: '{{ user_generate_key }}'
+      ssh_key_passphrase: '{{ user_key_passphrase }}'
+
+  - name: add .bashrc file in {{ user_home_dir }}
+    copy:
+      src: 'bashrc'
+      dest: {{ user_home_dir }}/.bashrc"
+      owner: '{{ user_name }}'
+      group: '{{ user_group_name }}'
+
+  - name: add .bash_profile file in {{ user_home_dir }}
+    copy:
+      src: 'bash_profile'
+      dest: '{{ user_home_dir }}/.bash_profile'
+      owner: '{{ user_name }}'
+      group: '{{ user_group_name }}'
+
+  - name: make .ssh directory in {{ user_home_dir }}
+    file:
+      path: '{{ user_home_dir }}/.ssh'
+      state: 'directory'
+      mode: '0700'
+      owner: '{{ user_name }}'
+      group: '{{ user_group_name }}'
+
+  - name: add keys to {{ user_home_dir }}/.ssh/authorized_keys
+    lineinfile:
+      create: 'yes'
+      mode: '0600'
+      owner: '{{ user_name }}'
+      group: '{{ user_group_name }}'
+      path: "{{ user_home_dir }}/.ssh/authorized_keys"
+      line: '{{ item }}'
+    with_items: '{{ user_authorized_keys }}'
+
+  - name: generate sudoer line
+    set_fact:
+      user_sudoer_line: "{{ user_name }} ALL=(ALL)"
+    when:
+      - 'user_sudoer'
+      - 'not user_sudo_nopasswd'
+
+  - name: generate sudoer line w/ nopasswd
+    set_fact:
+      user_sudoer_line: "{{ user_name }} ALL=(ALL) NOPASSWD: ALL"
+    when:
+      - 'user_sudoer'
+      - 'user_sudo_nopasswd'
+
+  - name: add user to sudoers
+    lineinfile:
+      state: '{{ user_state }}'
+      create: 'yes'
+      path: '/etc/sudoers'
+      line: '{{ user_sudoer_line }}'
+      regexp: '{{ user_name }} ALL='
+      validate: 'visudo -cf %s'
+    when:
+      - 'user_sudoer'

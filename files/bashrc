@@ -1,0 +1,46 @@
+# ------------------------------------------------------------------------------
+# Author:   Greg Horie
+# Date:     2016-05-26
+# Version:  0.2
+# Notes:    Customized .bashrc for all regular (generic) server functionality.
+# ------------------------------------------------------------------------------
+
+# Global settings
+
+umask 022   # file permissions
+
+# Command history settings
+
+export HISTFILESIZE=3000        # the bash history should save 3000 commands
+export HISTCONTROL=ignoredups   # don't put duplicate lines in the history
+
+# Prompt settings
+
+export PS1='\[\e]0;\w\a\]\n\[\e[36m\]\u@\h \[\e[33m\][\w]\[\e[0m\]\n\$ '
+
+# Default editor
+
+export EDITOR=/bin/vi
+
+# Exports
+
+export PATH=/sbin:/usr/sbin:/bin:/usr/bin:/usr/local/bin:/opt/tools/bin:$PATH:.
+export MANPATH=/usr/man:/usr/bin/man:/usr/local/man:$MANPATH:.
+
+# General Aliases
+
+alias h='history'
+alias hist='history | grep $1'  # requires one input
+alias broot='su - broot'
+
+# Custom Exports
+
+if [ -f ~/.exports ]; then
+    . ~/.exports
+fi
+
+# Custom Aliases
+
+if [ -f ~/.aliases ]; then
+    . ~/.aliases
+fi
