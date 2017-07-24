@@ -1,10 +1,17 @@
 ---
+  # part of the workaround for https://github.com/ansible/ansible/issues/19084
+  - name: unpack blockvar if necessary
+    set_fact:
+    args: '{{ user_blockvar }}'
+    when: 'user_blockvar != false'
+
   - name: create group {{ user_group_name }}
     group:
       name: '{{ user_group_name }}'
       state: 'present'
+    when: 'user_state == "present"'
 
-  - name: create user {{ user_name }}
+  - name: create user {{ user_name }} (or remove if user_state == absent)
     user:
       state: '{{ user_state }}'
       name: '{{ user_name }}'
@@ -15,12 +22,20 @@
       generate_ssh_key: '{{ user_generate_key }}'
       ssh_key_passphrase: '{{ user_key_passphrase }}'
 
+  - name: remove group {{ user_group_name }}
+    group:
+      name: '{{ user_group_name }}'
+      state: 'absent'
+    when: 'user_state == "absent"'
+
+
   - name: add .bashrc file in {{ user_home_dir }}
     copy:
       src: 'bashrc'
-      dest: {{ user_home_dir }}/.bashrc"
+      dest: '{{ user_home_dir }}/.bashrc'
       owner: '{{ user_name }}'
       group: '{{ user_group_name }}'
+    when: 'user_state == "present"'
 
   - name: add .bash_profile file in {{ user_home_dir }}
     copy:
@@ -28,6 +43,7 @@
       dest: '{{ user_home_dir }}/.bash_profile'
       owner: '{{ user_name }}'
       group: '{{ user_group_name }}'
+    when: 'user_state == "present"'
 
   - name: make .ssh directory in {{ user_home_dir }}
     file:
@@ -36,6 +52,7 @@
       mode: '0700'
       owner: '{{ user_name }}'
       group: '{{ user_group_name }}'
+    when: 'user_state == "present"'
 
   - name: add keys to {{ user_home_dir }}/.ssh/authorized_keys
     lineinfile:
@@ -46,6 +63,7 @@
       path: "{{ user_home_dir }}/.ssh/authorized_keys"
       line: '{{ item }}'
     with_items: '{{ user_authorized_keys }}'
+    when: 'user_state == "present"'
 
   - name: generate sudoer line
     set_fact:
@@ -61,7 +79,10 @@
       - 'user_sudoer'
       - 'user_sudo_nopasswd'
 
-  - name: add user to sudoers
+  - name: install sudo if necessary
+    package: name=sudo
+
+  - name: add user to sudoers (remove if user_state == absent)
     lineinfile:
       state: '{{ user_state }}'
       create: 'yes'

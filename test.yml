@@ -1,9 +1,100 @@
 - hosts: all
   become: True
-  handlers:
-    - include: 'handlers/main.yml'
   vars_files:
     - 'defaults/main.yml'
     - 'vars/main.yml'
+  handlers:
+    - include: 'handlers/main.yml'
   tasks:
-    - include: 'tasks/main.yml'
+    - name: 'applying role with defaults'
+      include: 'tasks/main.yml'
+
+    - name: 'check for {{ user_name }} in /etc/passwd'
+      shell: 'grep {{ user_name }} -q /etc/passwd'
+      register: shelloutput
+    - assert: { that: 'shelloutput.rc == 0', msg: '{{ user_name }} not found' }
+
+    - name: 'check that {{ user_home_dir }} was created'
+      shell: 'test -d {{ user_home_dir }}'
+      register: shelloutput
+    - assert: { that: 'shelloutput.rc == 0', msg: '{{ user_home_dir }} not found' }
+
+    - name: 'check that {{ user_name }} is a passwordless sudoer'
+      shell: 'grep -e "{{ user_name }} ALL=(ALL) NOPASSWD: ALL" -q /etc/sudoers'
+      register: shelloutput
+    - assert: { that: 'shelloutput.rc == 0', msg: 'sudoers line is missing or bad' }
+
+    - name: 'creating test user adoe'
+      include: 'tasks/main.yml'
+      vars:
+        user_name: 'adoe'
+        user_authorized_keys:
+          - '--big fake test key--'
+    - name: "check that the adoe pubkey was added to authorized_keys"
+      shell: "grep -q 'big fake test key' /home/adoe/.ssh/authorized_keys"
+      register: shelloutput
+    - assert: { that: 'shelloutput.rc == 0', msg: 'Bad or missing private ssh key' }
+
+    - name: 'applying role with different values'
+      include: 'tasks/main.yml'
+      vars:
+        - user_name: 'bdoe'
+          user_generate_key: 'yes'
+          user_key_passphrase: 'mootoothree'
+    - name: "check that ~/.ssh/id_rsa was generated for bdoe"
+      shell: 'test -f /home/bdoe/.ssh/id_rsa'
+      register: shelloutput
+    - assert: { that: 'shelloutput.rc == 0', msg: 'Bad or missing private ssh key' }
+
+    - name: 'applying role with different values'
+      include: 'tasks/main.yml'
+      vars:
+        - user_name: 'cdoe'
+          user_sudoer: false
+    - name: "check that cdoe is a user but not a sudoer"
+      shell: 'grep "cdoe" -q /etc/passwd && grep -HEoc cdoe /etc/sudoers | grep 0'
+      register: shelloutput
+    - assert: { that: 'shelloutput.rc == 0', msg: 'cdoe might be a sudoer' }
+
+    - name: 'applying role with different values'
+      include: 'tasks/main.yml'
+      vars:
+        - user_name: 'ddoe'
+          user_home_dir: '/tmp/ddoe'
+    - name: "check the home dir for ddoe"
+      shell: 'test -d /tmp/ddoe'
+      register: shelloutput
+    - assert: { that: 'shelloutput.rc == 0', msg: "ddoe's custom home location doesn't exist" }
+
+    - name: "set ddoe's state to absent"
+      include: 'tasks/main.yml'
+      vars:
+        user_name: 'ddoe'
+        user_state: 'absent'
+    - name: "check that ddoe is gone from /etc/passwd"
+      shell: 'grep -HEoc ddoe /etc/passwd | grep 0'
+      register: shelloutput
+    - assert: { that: 'shelloutput.rc == 0', msg: "ddoe is still in /etc/passwd" }
+
+    - name: 'set fact for blockvar test'
+      set_fact:
+        users:
+          - user_name: 'edoe'
+            user_authorized_keys:
+              - '--edoe fake test key--'
+          - user_name: 'fdoe'
+            user_generate_key: 'yes'
+            user_key_passphrase: 'mootoothree'
+    - name: "creating edoe and fdoe with blockvar"
+      include: 'tasks/main.yml'
+      vars:
+        user_blockvar: '{{item}}'
+      with_items: '{{users}}'
+    - name: "check that the edoe pubkey was added to authorized_keys"
+      shell: "grep -q 'edoe fake test key' /home/edoe/.ssh/authorized_keys"
+      register: shelloutput
+    - assert: { that: 'shelloutput.rc == 0', msg: 'Bad or missing private ssh key' }
+    - name: "check that ~/.ssh/id_rsa was generated for fdoe"
+      shell: 'test -f /home/fdoe/.ssh/id_rsa'
+      register: shelloutput
+    - assert: { that: 'shelloutput.rc == 0', msg: 'Bad or missing private ssh key' }

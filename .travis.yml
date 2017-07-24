@@ -24,7 +24,7 @@ install:
 
 script:
   - ansible-playbook test.yml --syntax-check
-  - ansible-playbook test.yml -c local -b
+  - ansible-playbook test.yml -vvv -c local -b -i 'localhost,'
   # - ./test/checks.sh # tasks have their own asserts, but this is an option too
 
 notifications:

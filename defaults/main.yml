@@ -10,3 +10,13 @@
   user_key_passphrase: ''
   user_sudoer: true
   user_sudo_nopasswd: true
+
+
+# KNOWN ISSUE. This won't work due to a bug in Ansible (https://github.com/ansible/ansible/issues/19084)
+# - name: Set up users
+#   include_role: name='inhumantsar.local-user'
+#   vars: '{{item}}'
+#   with_items: '{{users}}'
+
+# instead pass a dict containing the keys above into this var, the role will unpack it
+  user_blockvar: false
