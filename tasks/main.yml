@@ -1,4 +1,9 @@
 ---
+  - name: unpack blockvar if necessary
+    set_fact:
+    args: '{{ user_blockvar }}'
+    when: 'user_blockvar != false'
+
   - name: create group {{ user_group_name }}
     group:
       name: '{{ user_group_name }}'

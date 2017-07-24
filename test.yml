@@ -75,3 +75,26 @@
       shell: 'grep -HEoc ddoe /etc/passwd | grep 0'
       register: shelloutput
     - assert: { that: 'shelloutput.rc == 0', msg: "ddoe is still in /etc/passwd" }
+
+    - name: 'set fact for blockvar test'
+      set_fact:
+        users:
+          - user_name: 'edoe'
+            user_authorized_keys:
+              - '--edoe fake test key--'
+          - user_name: 'fdoe'
+            user_generate_key: 'yes'
+            user_key_passphrase: 'mootoothree'
+    - name: "creating edoe and fdoe with blockvar"
+      include: 'tasks/main.yml'
+      vars:
+        user_blockvar: '{{item}}'
+      with_items: '{{users}}'
+    - name: "check that the edoe pubkey was added to authorized_keys"
+      shell: "grep -q 'edoe fake test key' /home/edoe/.ssh/authorized_keys"
+      register: shelloutput
+    - assert: { that: 'shelloutput.rc == 0', msg: 'Bad or missing private ssh key' }
+    - name: "check that ~/.ssh/id_rsa was generated for fdoe"
+      shell: 'test -f /home/fdoe/.ssh/id_rsa'
+      register: shelloutput
+    - assert: { that: 'shelloutput.rc == 0', msg: 'Bad or missing private ssh key' }
