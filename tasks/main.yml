@@ -1,4 +1,5 @@
 ---
+  # part of the workaround for https://github.com/ansible/ansible/issues/19084
   - name: unpack blockvar if necessary
     set_fact:
     args: '{{ user_blockvar }}'
