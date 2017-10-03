@@ -28,14 +28,25 @@
       state: 'absent'
     when: 'user_state == "absent"'
 
-
-  - name: add .bashrc file in {{ user_home_dir }}
+  - name: add default .bashrc file in {{ user_home_dir }}
     copy:
       src: 'bashrc'
       dest: '{{ user_home_dir }}/.bashrc'
       owner: '{{ user_name }}'
       group: '{{ user_group_name }}'
-    when: 'user_state == "present"'
+    when:
+      - 'user_state == "present"'
+      - 'user_bashrc_content == ""'
+
+  - name: add custom .bashrc file in {{ user_home_dir }}
+    copy:
+      content: '{{ user_bashrc_content }}'
+      dest: '{{ user_home_dir }}/.bashrc'
+      owner: '{{ user_name }}'
+      group: '{{ user_group_name }}'
+    when:
+      - 'user_state == "present"'
+      - 'user_bashrc_content != ""'
 
   - name: add .bash_profile file in {{ user_home_dir }}
     copy:
